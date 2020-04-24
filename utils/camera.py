@@ -19,7 +19,7 @@ import cv2
 # pipeline to open USB webcam source.  If set to False, we just open
 # the webcam using cv2.VideoCapture(index) machinery. i.e. relying
 # on cv2's built-in function to capture images from the webcam.
-USB_GSTREAMER = True
+USB_GSTREAMER = False
 
 
 def add_camera_args(parser):

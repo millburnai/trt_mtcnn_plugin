@@ -13,10 +13,8 @@ from utils.camera import add_camera_args, Camera
 from utils.display import open_window, set_display, show_fps
 from utils.mtcnn import TrtMtcnn
 
-
 WINDOW_NAME = 'TrtMtcnnDemo'
 BBOX_COLOR = (0, 255, 0)  # green
-
 
 def parse_args():
     """Parse input arguments."""
@@ -43,6 +41,7 @@ def show_faces(img, boxes, landmarks):
 
 def loop_and_detect(cam, mtcnn, minsize):
     """Continuously capture images from camera and do face detection."""
+    margin = 10
     full_scrn = False
     fps = 0.0
     tic = time.time()
@@ -51,16 +50,21 @@ def loop_and_detect(cam, mtcnn, minsize):
             break
         img = cam.read()
         if img is not None:
-            dets, landmarks = mtcnn.detect(img, minsize=minsize)
-            print('{} face(s) found'.format(len(dets)))
-            img = show_faces(img, dets, landmarks)
-            img = show_fps(img, fps)
-            cv2.imshow(WINDOW_NAME, img)
-            toc = time.time()
-            curr_fps = 1.0 / (toc - tic)
-            # calculate an exponentially decaying average of fps number
-            fps = curr_fps if fps == 0.0 else (fps*0.95 + curr_fps*0.05)
-            tic = toc
+            try:
+                start = time.time()
+                dets, landmarks = mtcnn.detect(img, minsize=minsize)]
+                print("{} ms".format(round(1000. * (time.time() - start), 2)))
+                print('{} face(s) found'.format(len(dets)))
+                img = show_faces(img, dets, landmarks)
+                img = show_fps(img, fps)
+                cv2.imshow(WINDOW_NAME, img)
+                toc = time.time()
+                curr_fps = 1.0 / (toc - tic)
+                # calculate an exponentially decaying average of fps number
+                fps = curr_fps if fps == 0.0 else (fps*0.95 + curr_fps*0.05)
+                tic = toc
+            except ValueError:
+                pass
         key = cv2.waitKey(1)
         if key == 27:  # ESC key: quit program
             break
