@@ -7,7 +7,7 @@ class TrtMTCNNWrapper:
     def __init__(self):
         self.mtcnn = TrtMtcnn()
 
-    def detect_faces(self, img, margin, minsize=40):
+    def detect_faces(self, img, minsize=40):
         result = []
 
         boxes, landmarks = self.mtcnn.detect(img[:, :, ::-1], minsize=minsize)
