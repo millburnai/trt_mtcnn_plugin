@@ -1,8 +1,8 @@
-from utils.mtcnn import TrtMtcnn
+from trt_mtcnn import TrtMtcnn
 
 class TrtMTCNNWrapper:
 
-    LANDMARK_KEY = ["left_eye", "mouth_left", "nose", "right_eye", "mouth_right"]
+    LANDMARKS = ["left_eye", "mouth_left", "nose", "right_eye", "mouth_right"]
 
     def __init__(self):
         self.mtcnn = TrtMtcnn()
@@ -21,7 +21,7 @@ class TrtMTCNNWrapper:
 
             x_key, y_key = features[:5], features[5:]
             face["keypoints"] = {
-                feat: (int(x), int(y)) for feat, x, y in zip(self.LANDMARK_KEY, x_key, y_key)
+                feat: (int(x), int(y)) for feat, x, y in zip(self.LANDMARKS, x_key, y_key)
             }
 
             result.append(face)
