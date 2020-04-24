@@ -52,7 +52,7 @@ def loop_and_detect(cam, mtcnn, minsize):
         if img is not None:
             try:
                 start = time.time()
-                dets, landmarks = mtcnn.detect(img, minsize=minsize)]
+                dets, landmarks = mtcnn.detect(img, minsize=minsize)
                 print("{} ms".format(round(1000. * (time.time() - start), 2)))
                 print('{} face(s) found'.format(len(dets)))
                 img = show_faces(img, dets, landmarks)
