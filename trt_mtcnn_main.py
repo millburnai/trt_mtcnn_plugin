@@ -4,8 +4,8 @@ class TrtMTCNNWrapper:
 
     LANDMARKS = ["left_eye", "mouth_left", "nose", "right_eye", "mouth_right"]
 
-    def __init__(self):
-        self.mtcnn = TrtMtcnn()
+    def __init__(self, pnet, rnet, onet):
+        self.mtcnn = TrtMtcnn(pnet, rnet, onet)
 
     def detect_faces(self, img, minsize=40):
         result = []
