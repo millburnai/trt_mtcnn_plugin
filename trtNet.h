@@ -53,30 +53,6 @@ namespace trtnet {
             std::size_t _s;
     };
 
-    class TrtGooglenet
-    {
-        public:
-            TrtGooglenet();
-            // init from engine file
-            void initEngine(std::string filePath, int dataDims[3], int probDims[3]);
-            void forward(float *imgs, float *prob);
-            void destroy();
-
-        private:
-            Logger _gLogger;
-            IHostMemory *_gieModelStream{nullptr};
-            IRuntime *_runtime;
-            ICudaEngine *_engine;
-            IExecutionContext *_context;
-            cudaStream_t _stream;
-            void *_gpu_buffers[2];
-            int _blob_sizes[2];
-	        int _binding_data;
-	        int _binding_prob;
-
-            void _initEngine(std::string filePath);
-    };
-
     class TrtMtcnnDet
     {
         public:
