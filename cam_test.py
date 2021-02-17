@@ -5,7 +5,7 @@ import cv2
 
 sys.path.insert(1, "../..")
 from trt_mtcnn import TrtMTCNNWrapper
-from utils.visuals import GraphicsRenderer, Camera
+from util.visuals import GraphicsRenderer, Camera
 
 
 if __name__ == "__main__":
