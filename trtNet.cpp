@@ -1,6 +1,7 @@
 // trtNet.cpp
 
 #include "trtNet.h"
+#include <string>
 
 using namespace nvinfer1;
 using namespace nvcaffeparser1;
@@ -94,12 +95,23 @@ namespace trtnet {
 
         d = static_cast<Dims3&&>(_engine->getBindingDimensions(_binding_prob1));
         my_assert(d.nbDims == 3, "bad nbDims for 'prob1'");
-        my_assert(d.d[0] == prob1Dims[0] && d.d[1] == prob1Dims[1] && d.d[2] == prob1Dims[2], "bad dims for 'prob1'");
+//        my_assert(d.d[0] == prob1Dims[0] && d.d[1] == prob1Dims[1] && d.d[2] == prob1Dims[2], "bad dims for 'prob1'");
+        my_assert(d.d[0] == prob1Dims[0], "bad dim1 for 'prob1'");
+        my_assert(d.d[1] == prob1Dims[1],
+                  "bad dim2 for 'prob1': " + std::to_string(prob1Dims[1]) + ", "+ std::to_string(d.d[1]));
+        my_assert(d.d[2] == prob1Dims[2],
+                  "bad dim3 for 'prob1': " + std::to_string(prob1Dims[2]) + ", "+ std::to_string(d.d[2]));
         _blob_sizes[_binding_prob1] = d.d[0] * d.d[1] * d.d[2];
 
         d = static_cast<Dims3&&>(_engine->getBindingDimensions(_binding_boxes));
         my_assert(d.nbDims == 3, "bad nbDims for 'boxes'");
-        my_assert(d.d[0] == boxesDims[0] && d.d[1] == boxesDims[1] && d.d[2] == boxesDims[2], "bad dims for 'boxes'");
+//        my_assert(d.d[0] == boxesDims[0] && d.d[1] == boxesDims[1] && d.d[2] == boxesDims[2], "bad dims for 'boxes'");
+        my_assert(d.d[0] == boxesDims[0],
+                  "bad dim1 for 'boxesDims': " + std::to_string(boxesDims[0]) + ", "+ std::to_string(d.d[0]));
+        my_assert(d.d[1] == boxesDims[1],
+                  "bad dim2 for 'boxesDims': " + std::to_string(boxesDims[1]) + ", "+ std::to_string(d.d[1]));
+        my_assert(d.d[2] == boxesDims[2],
+                  "bad dim3 for 'boxesDims': " + std::to_string(boxesDims[2]) + ", "+ std::to_string(d.d[2]));
         _blob_sizes[_binding_boxes] = d.d[0] * d.d[1] * d.d[2];
 #endif  // NV_TENSORRT_MAJOR
     }

@@ -254,9 +254,12 @@ class TrtPNet(object):
     dimmensions of TrtPNet, as well as input H offsets (for all scales).
     The output H offsets are merely input offsets divided by stride (2).
     """
-    input_h_offsets  = (0, 216, 370, 478, 556, 610, 648, 676, 696)
-    output_h_offsets = (0, 108, 185, 239, 278, 305, 324, 338, 348)
-    max_n_scales = 9
+    # input_h_offsets  = (0, 216, 370, 478, 556, 610, 648, 676, 696)
+    # output_h_offsets = (0, 108, 185, 239, 278, 305, 324, 338, 348)
+    # max_n_scales = 9
+    input_h_offsets = (0, 62, 80, 93, 102, 108, 113, 116, 118)
+    output_h_offsets = (0, 31, 40, 46, 51, 54, 56, 58, 59)
+    max_n_scales = 7
 
     def __init__(self, engine):
         """__init__
@@ -264,10 +267,10 @@ class TrtPNet(object):
         # Arguments
             engine: path to the TensorRT engine file
         """
-        self.trtnet = pytrt.PyTrtMtcnn(engine,
-                                       (3, 710, 384),
-                                       (2, 350, 187),
-                                       (4, 350, 187))
+        shape1 = (3, 119, 64)#(3, 710, 384)
+        shape2 = (2, 55, 27)#(2, 350, 187)
+        shape3 = (4, 55, 27)#(4, 350, 187)
+        self.trtnet = pytrt.PyTrtMtcnn(engine, shape1, shape2, shape3)
         self.trtnet.set_batchsize(1)
 
     def detect(self, img, minsize=40, factor=0.709, threshold=0.7):
@@ -281,6 +284,8 @@ class TrtPNet(object):
             A numpy array of bounding box coordinates and the
             cooresponding scores: [[x1, y1, x2, y2, score], ...]
         """
+        minsize = 240
+
         if minsize < 40:
             raise ValueError("TrtPNet is currently designed with "
                              "'minsize' >= 40")
@@ -306,7 +311,8 @@ class TrtPNet(object):
 
         # stack all scales of the input image vertically into 1 big
         # image, and only do inferencing once
-        im_data = np.zeros((1, 3, 710, 384), dtype=np.float32)
+        # im_data = np.zeros((1, 3, 710, 384), dtype=np.float32)
+        im_data = np.zeros((1, 3, 119, 64), dtype=np.float32)
         for i, scale in enumerate(scales):
             h_offset = self.input_h_offsets[i]
             h = int(img_h * scale)
@@ -333,7 +339,7 @@ class TrtPNet(object):
 
         if total_boxes.shape[0] == 0:
             return total_boxes
-        pick = nms(total_boxes, 0.7, 'Union')
+        pick = nms(total_boxes, threshold, 'Union')
         dets = clip_dets(total_boxes[pick, :], img_w, img_h)
         return dets
 
@@ -355,7 +361,7 @@ class TrtRNet(object):
                                        (2, 1, 1),
                                        (4, 1, 1))
 
-    def detect(self, img, boxes, max_batch=256, threshold=0.7):
+    def detect(self, img, boxes, max_batch=1, threshold=0.7):
         """Detect faces using RNet
 
         # Arguments
@@ -415,7 +421,7 @@ class TrtONet(object):
                                        (4, 1, 1),
                                        (10, 1, 1))
 
-    def detect(self, img, boxes, max_batch=64, threshold=0.7):
+    def detect(self, img, boxes, max_batch=1, threshold=0.7):
         """Detect faces using ONet
 
         # Arguments
