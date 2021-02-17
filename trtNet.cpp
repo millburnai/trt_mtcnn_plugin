@@ -90,7 +90,13 @@ namespace trtnet {
         Dims3 d;
         d = static_cast<Dims3&&>(_engine->getBindingDimensions(_binding_data));
         my_assert(d.nbDims == 3, "bad nbDims for 'data'");
-        my_assert(d.d[0] == dataDims[0] && d.d[1] == dataDims[1] && d.d[2] == dataDims[2], "bad dims for 'data'");
+//        my_assert(d.d[0] == dataDims[0] && d.d[1] == dataDims[1] && d.d[2] == dataDims[2], "bad dims for 'data'");
+        my_assert(d.d[0] == dataDims[0],
+                  "bad dim1 for 'data': " + std::to_string(d.d[0]) +", " + std::to_string(dataDims[0]));
+        my_assert(d.d[1] == dataDims[1],
+                  "bad dim2 for 'data': " + std::to_string(d.d[1]) +", " + std::to_string(dataDims[1]));
+        my_assert(d.d[2] == dataDims[2],
+                  "bad dim3 for 'data': " + std::to_string(d.d[2]) +", " + std::to_string(dataDims[2]));
         _blob_sizes[_binding_data] = d.d[0] * d.d[1] * d.d[2];
 
         d = static_cast<Dims3&&>(_engine->getBindingDimensions(_binding_prob1));

@@ -9,6 +9,32 @@ import pytrt
 PIXEL_MEAN = 127.5
 PIXEL_SCALE = 0.0078125
 
+MINSIZE = 40
+
+if MINSIZE == 40:
+    input_h_offsets = (0, 216, 370, 478, 556, 610, 648, 676, 696)
+    output_h_offsets = (0, 108, 185, 239, 278, 305, 324, 338, 348)
+    max_n_scales = 9
+    shape1 = (3, 710, 384)
+    shape2 = (2, 350, 187)
+    shape3 = (4, 350, 187)
+
+elif MINSIZE == 120:
+    input_h_offsets = (0, 72, 123, 159, 185, 203, 216, 225, 231)
+    output_h_offsets = (0, 36, 61, 79, 92, 101, 108, 112, 115)
+    max_n_scales = 9
+    shape1 = (3, 236, 128)
+    shape2 = (2, 113, 59)
+    shape3 = (4, 113, 59)
+
+elif MINSIZE == 240:
+    input_h_offsets = (0, 62, 80, 93, 102, 108, 113, 116, 118)
+    output_h_offsets = (0, 31, 40, 46, 51, 54, 56, 58, 59)
+    max_n_scales = 9
+    shape1 = (3, 119, 64)
+    shape2 = (2, 55, 27)
+    shape3 = (4, 55, 27)
+
 
 class TrtMTCNNWrapper:
 
@@ -17,10 +43,10 @@ class TrtMTCNNWrapper:
     def __init__(self, pnet, rnet, onet):
         self.mtcnn = TrtMtcnn(pnet, rnet, onet)
 
-    def detect_faces(self, img, minsize=40):
+    def detect_faces(self, img):
         result = []
 
-        boxes, landmarks = self.mtcnn.detect(img[:, :, ::-1], minsize=minsize)
+        boxes, landmarks = self.mtcnn.detect(img[:, :, ::-1])
         for box, features in zip(boxes, landmarks):
             face = {}
 
@@ -254,12 +280,6 @@ class TrtPNet(object):
     dimmensions of TrtPNet, as well as input H offsets (for all scales).
     The output H offsets are merely input offsets divided by stride (2).
     """
-    # input_h_offsets  = (0, 216, 370, 478, 556, 610, 648, 676, 696)
-    # output_h_offsets = (0, 108, 185, 239, 278, 305, 324, 338, 348)
-    # max_n_scales = 9
-    input_h_offsets = (0, 62, 80, 93, 102, 108, 113, 116, 118)
-    output_h_offsets = (0, 31, 40, 46, 51, 54, 56, 58, 59)
-    max_n_scales = 7
 
     def __init__(self, engine):
         """__init__
@@ -267,13 +287,10 @@ class TrtPNet(object):
         # Arguments
             engine: path to the TensorRT engine file
         """
-        shape1 = (3, 119, 64)#(3, 710, 384)
-        shape2 = (2, 55, 27)#(2, 350, 187)
-        shape3 = (4, 55, 27)#(4, 350, 187)
         self.trtnet = pytrt.PyTrtMtcnn(engine, shape1, shape2, shape3)
         self.trtnet.set_batchsize(1)
 
-    def detect(self, img, minsize=40, factor=0.709, threshold=0.7):
+    def detect(self, img, factor=0.709, threshold=0.7):
         """Detect faces using PNet
 
         # Arguments
@@ -284,15 +301,14 @@ class TrtPNet(object):
             A numpy array of bounding box coordinates and the
             cooresponding scores: [[x1, y1, x2, y2, score], ...]
         """
-        minsize = 240
 
-        if minsize < 40:
+        if MINSIZE < 40:
             raise ValueError("TrtPNet is currently designed with "
                              "'minsize' >= 40")
         if factor > 0.709:
             raise ValueError("TrtPNet is currently designed with "
                              "'factor' <= 0.709")
-        m = 12.0 / minsize
+        m = 12.0 / MINSIZE
         img_h, img_w, _ = img.shape
         minl = min(img_h, img_w) * m
 
@@ -302,7 +318,7 @@ class TrtPNet(object):
             scales.append(m)
             m *= factor
             minl *= factor
-        if len(scales) > self.max_n_scales:  # probably won't happen...
+        if len(scales) > max_n_scales:  # probably won't happen...
             raise ValueError('Too many scales, try increasing minsize '
                              'or decreasing factor.')
 
@@ -311,10 +327,9 @@ class TrtPNet(object):
 
         # stack all scales of the input image vertically into 1 big
         # image, and only do inferencing once
-        # im_data = np.zeros((1, 3, 710, 384), dtype=np.float32)
-        im_data = np.zeros((1, 3, 119, 64), dtype=np.float32)
+        im_data = np.zeros((1, *shape1), dtype=np.float32)
         for i, scale in enumerate(scales):
-            h_offset = self.input_h_offsets[i]
+            h_offset = input_h_offsets[i]
             h = int(img_h * scale)
             w = int(img_w * scale)
             im_data[0, :, h_offset:(h_offset+h), :w] = \
@@ -324,7 +339,7 @@ class TrtPNet(object):
 
         # extract outputs of each scale from the big output blob
         for i, scale in enumerate(scales):
-            h_offset = self.output_h_offsets[i]
+            h_offset = output_h_offsets[i]
             h = (int(img_h * scale) - 12) // 2 + 1
             w = (int(img_w * scale) - 12) // 2 + 1
             pp = out['prob1'][0, 1, h_offset:(h_offset+h), :w]
@@ -361,7 +376,7 @@ class TrtRNet(object):
                                        (2, 1, 1),
                                        (4, 1, 1))
 
-    def detect(self, img, boxes, max_batch=1, threshold=0.7):
+    def detect(self, img, boxes, max_batch=32, threshold=0.7):
         """Detect faces using RNet
 
         # Arguments
@@ -421,7 +436,7 @@ class TrtONet(object):
                                        (4, 1, 1),
                                        (10, 1, 1))
 
-    def detect(self, img, boxes, max_batch=1, threshold=0.7):
+    def detect(self, img, boxes, max_batch=16, threshold=0.7):
         """Detect faces using ONet
 
         # Arguments
@@ -480,7 +495,7 @@ class TrtMtcnn(object):
         self.rnet.destroy()
         self.pnet.destroy()
 
-    def _detect_1280x720(self, img, minsize):
+    def _detect_1280x720(self, img):
         """_detec_1280x720()
 
         Assuming 'img' has been resized to less than 1280x720.
@@ -488,12 +503,12 @@ class TrtMtcnn(object):
         # MTCNN model was trained with 'MATLAB' image so its channel
         # order is RGB instead of BGR.
         img = img[:, :, ::-1]  # BGR -> RGB
-        dets = self.pnet.detect(img, minsize=minsize)
+        dets = self.pnet.detect(img)
         dets = self.rnet.detect(img, dets)
         dets, landmarks = self.onet.detect(img, dets)
         return dets, landmarks
 
-    def detect(self, img, minsize=40):
+    def detect(self, img):
         """detect()
 
         This function handles rescaling of the input image if it's
@@ -507,8 +522,8 @@ class TrtMtcnn(object):
             new_h = int(np.ceil(img_h * scale))
             new_w = int(np.ceil(img_w * scale))
             img = cv2.resize(img, (new_w, new_h))
-            minsize = max(int(np.ceil(minsize * scale)), 40)
-        dets, landmarks = self._detect_1280x720(img, minsize)
+            minsize = max(int(np.ceil(MINSIZE * scale)), 40)
+        dets, landmarks = self._detect_1280x720(img)
         if scale < 1.0:
             dets[:, :-1] = np.fix(dets[:, :-1] / scale)
             landmarks = np.fix(landmarks / scale)
