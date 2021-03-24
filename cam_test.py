@@ -16,21 +16,27 @@ if __name__ == "__main__":
     cap = Camera(threaded=False)
     graphics = GraphicsRenderer()
 
+    try:
+        visuals = bool(int(sys.argv[1]))
+    except IndexError:
+        print("USAGE: python3 cam_test.py [visuals]")
+        sys.exit(1)
+
     while True:
         _, frame = cap.read()
 
-        try:
-            start = timer()
-            result = mtcnn.detect_faces(frame)
-            elapsed = timer() - start
+        start = timer()
+        result = mtcnn.detect_faces(frame)
+        elapsed = timer() - start
 
-            for person in result:
-                graphics.add_graphics(frame, person, True, "", elapsed)
-            print(f"{elapsed * 1000} ms")
+        if result:
+            if visuals:
+                for person in result:
+                    graphics.add_graphics(frame, person, True, "", elapsed)
+            print("FACE DETECTED!!")
+        print(f"{elapsed * 1000} ms")
 
-        except IndexError:
-            print("no face detected")
-
-        cv2.imshow("cam test", frame)
-        if cv2.waitKey(1) & 0xFF == ord("q"):
-            break
+        if visuals:
+            cv2.imshow("cam test", frame)
+            if cv2.waitKey(1) & 0xFF == ord("q"):
+                break
