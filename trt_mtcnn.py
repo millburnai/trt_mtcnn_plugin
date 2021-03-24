@@ -436,7 +436,7 @@ class TrtONet(object):
                                        (4, 1, 1),
                                        (10, 1, 1))
 
-    def detect(self, img, boxes, max_batch=16, threshold=0.7):
+    def detect(self, img, boxes, max_batch=64, threshold=0.7):
         """Detect faces using ONet
 
         # Arguments
