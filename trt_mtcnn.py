@@ -57,7 +57,7 @@ class TrtMTCNNWrapper:
 
             x_key, y_key = features[:5], features[5:]
             face["keypoints"] = {
-                feat: (int(x), int(y)) for feat, x, y in zip(self.LANDMARKS, x_key, y_key)
+                feat: (int(y), int(x)) for feat, x, y in zip(self.LANDMARKS, x_key, y_key)
             }
 
             result.append(face)
