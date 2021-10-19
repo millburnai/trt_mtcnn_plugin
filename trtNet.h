@@ -19,7 +19,7 @@ namespace trtnet {
 
     class Logger : public ILogger
     {
-        void log(Severity severity, const char *msg) override
+        void log(Severity severity, const char *msg) noexcept override
         {
             if (severity != Severity::kINFO)
                  std::cout << msg << std::endl;
