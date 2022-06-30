@@ -6,40 +6,40 @@ from Cython.Build import cythonize
 import numpy
 
 library_dirs = [
-    '/usr/local/cuda/lib64',
-    '/usr/local/lib',
+    "/usr/local/cuda/lib64",
+    "/usr/local/lib",
 ]
 
 libraries = [
-    'nvinfer',
-    'cudnn',
-    'cublas',
-    'cudart_static',
-    'nvToolsExt',
-    'cudart',
-    'rt',
+    "nvinfer",
+    "cudnn",
+    "cublas",
+    "cudart_static",
+    "nvToolsExt",
+    "cudart",
+    "rt",
 ]
 
 include_dirs = [
     # in case the following numpy include path does not work, you
     # could replace it manually with, say,
     # '-I/usr/local/lib/python3.6/dist-packages/numpy/core/include',
-    '-I' + numpy.__path__[0] + '/core/include',
-    '-I/usr/local/cuda/include',
-    '-I/usr/local/include',
+    "-I" + numpy.__path__[0] + "/core/include",
+    "-I/usr/local/cuda/include",
+    "-I/usr/local/include",
 ]
 
 setup(
-    cmdclass={'build_ext': build_ext},
+    cmdclass={"build_ext": build_ext},
     ext_modules=cythonize(
         Extension(
-            'pytrt',
-            sources=['pytrt.pyx'],
-            language='c++',
+            "pytrt",
+            sources=["pytrt.pyx"],
+            language="c++",
             library_dirs=library_dirs,
             libraries=libraries,
-            extra_compile_args=['-O3', '-std=c++11'] + include_dirs
+            extra_compile_args=["-O3", "-std=c++11"] + include_dirs,
         ),
-        compiler_directives={'language_level': '3'}
-    )
+        compiler_directives={"language_level": "3"},
+    ),
 )

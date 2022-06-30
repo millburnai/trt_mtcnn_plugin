@@ -9,9 +9,9 @@ from util.visuals import GraphicsRenderer, Camera
 
 
 if __name__ == "__main__":
-    mtcnn = TrtMTCNNWrapper("mtcnn/det1.engine",
-                            "mtcnn/det2.engine",
-                            "mtcnn/det3.engine")
+    mtcnn = TrtMTCNNWrapper(
+        "mtcnn/det1.engine", "mtcnn/det2.engine", "mtcnn/det3.engine"
+    )
 
     cap = Camera(threaded=False)
     graphics = GraphicsRenderer()

@@ -57,7 +57,8 @@ class TrtMTCNNWrapper:
 
             x_key, y_key = features[:5], features[5:]
             face["keypoints"] = {
-                feat: (int(y), int(x)) for feat, x, y in zip(self.LANDMARKS, x_key, y_key)
+                feat: (int(y), int(x))
+                for feat, x, y in zip(self.LANDMARKS, x_key, y_key)
             }
 
             result.append(face)
@@ -75,13 +76,13 @@ def convert_to_1x1(boxes):
         boxes_1x1
     """
     boxes_1x1 = boxes.copy()
-    hh = boxes[:, 3] - boxes[:, 1] + 1.
-    ww = boxes[:, 2] - boxes[:, 0] + 1.
+    hh = boxes[:, 3] - boxes[:, 1] + 1.0
+    ww = boxes[:, 2] - boxes[:, 0] + 1.0
     mm = np.maximum(hh, ww)
     boxes_1x1[:, 0] = boxes[:, 0] + ww * 0.5 - mm * 0.5
     boxes_1x1[:, 1] = boxes[:, 1] + hh * 0.5 - mm * 0.5
-    boxes_1x1[:, 2] = boxes_1x1[:, 0] + mm - 1.
-    boxes_1x1[:, 3] = boxes_1x1[:, 1] + mm - 1.
+    boxes_1x1[:, 2] = boxes_1x1[:, 0] + mm - 1.0
+    boxes_1x1[:, 3] = boxes_1x1[:, 1] + mm - 1.0
     boxes_1x1[:, 0:4] = np.fix(boxes_1x1[:, 0:4])
     return boxes_1x1
 
@@ -113,13 +114,13 @@ def crop_img_with_padding(img, box, padding=0):
     ey2 = min(ch, img_h - cy1)
     fx1 = max(cx1, 0)  # fx/fy's are the source coordinates
     fy1 = max(cy1, 0)
-    fx2 = min(cx2+1, img_w)
-    fy2 = min(cy2+1, img_h)
+    fx2 = min(cx2 + 1, img_w)
+    fy2 = min(cy2 + 1, img_h)
     cropped_im[ey1:ey2, ex1:ex2, :] = img[fy1:fy2, fx1:fx2, :]
     return cropped_im
 
 
-def nms(boxes, threshold, type='Union'):
+def nms(boxes, threshold, type="Union"):
     """Non-Maximum Supression
 
     # Arguments
@@ -133,7 +134,7 @@ def nms(boxes, threshold, type='Union'):
     if boxes.shape[0] == 0:
         return []
     xx1, yy1, xx2, yy2 = boxes[:, 0], boxes[:, 1], boxes[:, 2], boxes[:, 3]
-    areas = np.multiply(xx2-xx1+1, yy2-yy1+1)
+    areas = np.multiply(xx2 - xx1 + 1, yy2 - yy1 + 1)
     sorted_idx = boxes[:, 4].argsort()
 
     pick = []
@@ -147,12 +148,10 @@ def nms(boxes, threshold, type='Union'):
         tw = np.maximum(0.0, tx2 - tx1 + 1)
         th = np.maximum(0.0, ty2 - ty1 + 1)
         inter = tw * th
-        if type == 'Min':
-            iou = inter / \
-                  np.minimum(areas[sorted_idx[-1]], areas[sorted_idx[0:-1]])
+        if type == "Min":
+            iou = inter / np.minimum(areas[sorted_idx[-1]], areas[sorted_idx[0:-1]])
         else:
-            iou = inter / \
-                  (areas[sorted_idx[-1]] + areas[sorted_idx[0:-1]] - inter)
+            iou = inter / (areas[sorted_idx[-1]] + areas[sorted_idx[0:-1]] - inter)
         pick.append(sorted_idx[-1])
         sorted_idx = sorted_idx[np.where(iou <= threshold)[0]]
     return pick
@@ -188,16 +187,15 @@ def generate_pnet_bboxes(conf, reg, scale, t):
     if len(x) == 0:
         return np.zeros((0, 5), np.float32)
 
-    score = np.array(conf[x, y]).reshape(-1, 1)          # Nx1
-    reg = np.array([dx1[x, y], dy1[x, y],
-                    dx2[x, y], dy2[x, y]]).T * 12.       # Nx4
-    topleft = np.array([x, y], dtype=np.float32).T * 2.  # Nx2
-    bottomright = topleft + np.array([11., 11.], dtype=np.float32)  # Nx2
+    score = np.array(conf[x, y]).reshape(-1, 1)  # Nx1
+    reg = np.array([dx1[x, y], dy1[x, y], dx2[x, y], dy2[x, y]]).T * 12.0  # Nx4
+    topleft = np.array([x, y], dtype=np.float32).T * 2.0  # Nx2
+    bottomright = topleft + np.array([11.0, 11.0], dtype=np.float32)  # Nx2
     boxes = (np.concatenate((topleft, bottomright), axis=1) + reg) / scale
-    boxes = np.concatenate((boxes, score), axis=1)       # Nx5
+    boxes = np.concatenate((boxes, score), axis=1)  # Nx5
     # filter bboxes which are too small
-    #boxes = boxes[boxes[:, 2]-boxes[:, 0] >= 12., :]
-    #boxes = boxes[boxes[:, 3]-boxes[:, 1] >= 12., :]
+    # boxes = boxes[boxes[:, 2]-boxes[:, 0] >= 12., :]
+    # boxes = boxes[boxes[:, 3]-boxes[:, 1] >= 12., :]
     return boxes
 
 
@@ -219,8 +217,8 @@ def generate_rnet_bboxes(conf, reg, pboxes, t):
     boxes[:, 4] = conf  # update 'score' of all boxes
     boxes = boxes[conf >= t, :]
     reg = reg[conf >= t, :]
-    ww = (boxes[:, 2]-boxes[:, 0]+1).reshape(-1, 1)  # x2 - x1 + 1
-    hh = (boxes[:, 3]-boxes[:, 1]+1).reshape(-1, 1)  # y2 - y1 + 1
+    ww = (boxes[:, 2] - boxes[:, 0] + 1).reshape(-1, 1)  # x2 - x1 + 1
+    hh = (boxes[:, 3] - boxes[:, 1] + 1).reshape(-1, 1)  # y2 - y1 + 1
     boxes[:, 0:4] += np.concatenate((ww, hh, ww, hh), axis=1) * reg
     return boxes
 
@@ -249,10 +247,12 @@ def generate_onet_outputs(conf, reg_boxes, reg_marks, rboxes, t):
     reg_marks = reg_marks[conf >= t, :]
     xx = boxes[:, 0].reshape(-1, 1)
     yy = boxes[:, 1].reshape(-1, 1)
-    ww = (boxes[:, 2]-boxes[:, 0]).reshape(-1, 1)
-    hh = (boxes[:, 3]-boxes[:, 1]).reshape(-1, 1)
+    ww = (boxes[:, 2] - boxes[:, 0]).reshape(-1, 1)
+    hh = (boxes[:, 3] - boxes[:, 1]).reshape(-1, 1)
     marks = np.concatenate((xx, xx, xx, xx, xx, yy, yy, yy, yy, yy), axis=1)
-    marks += np.concatenate((ww, ww, ww, ww, ww, hh, hh, hh, hh, hh), axis=1) * reg_marks
+    marks += (
+        np.concatenate((ww, ww, ww, ww, ww, hh, hh, hh, hh, hh), axis=1) * reg_marks
+    )
     ww = ww + 1
     hh = hh + 1
     boxes[:, 0:4] += np.concatenate((ww, hh, ww, hh), axis=1) * reg_boxes
@@ -266,10 +266,10 @@ def clip_dets(dets, img_w, img_h):
     it is 'conf'.
     """
     dets[:, 0:-1] = np.fix(dets[:, 0:-1])
-    evens = np.arange(0, dets.shape[1]-1, 2)
-    odds  = np.arange(1, dets.shape[1]-1, 2)
-    dets[:, evens] = np.clip(dets[:, evens], 0., float(img_w-1))
-    dets[:, odds]  = np.clip(dets[:, odds], 0., float(img_h-1))
+    evens = np.arange(0, dets.shape[1] - 1, 2)
+    odds = np.arange(1, dets.shape[1] - 1, 2)
+    dets[:, evens] = np.clip(dets[:, evens], 0.0, float(img_w - 1))
+    dets[:, odds] = np.clip(dets[:, odds], 0.0, float(img_h - 1))
     return dets
 
 
@@ -303,11 +303,9 @@ class TrtPNet(object):
         """
 
         if MINSIZE < 40:
-            raise ValueError("TrtPNet is currently designed with "
-                             "'minsize' >= 40")
+            raise ValueError("TrtPNet is currently designed with " "'minsize' >= 40")
         if factor > 0.709:
-            raise ValueError("TrtPNet is currently designed with "
-                             "'factor' <= 0.709")
+            raise ValueError("TrtPNet is currently designed with " "'factor' <= 0.709")
         m = 12.0 / MINSIZE
         img_h, img_w, _ = img.shape
         minl = min(img_h, img_w) * m
@@ -319,8 +317,9 @@ class TrtPNet(object):
             m *= factor
             minl *= factor
         if len(scales) > max_n_scales:  # probably won't happen...
-            raise ValueError('Too many scales, try increasing minsize '
-                             'or decreasing factor.')
+            raise ValueError(
+                "Too many scales, try increasing minsize " "or decreasing factor."
+            )
 
         total_boxes = np.zeros((0, 5), dtype=np.float32)
         img = (img.astype(np.float32) - PIXEL_MEAN) * PIXEL_SCALE
@@ -332,8 +331,9 @@ class TrtPNet(object):
             h_offset = input_h_offsets[i]
             h = int(img_h * scale)
             w = int(img_w * scale)
-            im_data[0, :, h_offset:(h_offset+h), :w] = \
-                cv2.resize(img, (w, h)).transpose((2, 0, 1))
+            im_data[0, :, h_offset : (h_offset + h), :w] = cv2.resize(
+                img, (w, h)
+            ).transpose((2, 0, 1))
 
         out = self.trtnet.forward(im_data)
 
@@ -342,11 +342,11 @@ class TrtPNet(object):
             h_offset = output_h_offsets[i]
             h = (int(img_h * scale) - 12) // 2 + 1
             w = (int(img_w * scale) - 12) // 2 + 1
-            pp = out['prob1'][0, 1, h_offset:(h_offset+h), :w]
-            cc = out['boxes'][0, :, h_offset:(h_offset+h), :w]
+            pp = out["prob1"][0, 1, h_offset : (h_offset + h), :w]
+            cc = out["boxes"][0, :, h_offset : (h_offset + h), :w]
             boxes = generate_pnet_bboxes(pp, cc, scale, threshold)
             if boxes.shape[0] > 0:
-                pick = nms(boxes, 0.5, 'Union')
+                pick = nms(boxes, 0.5, "Union")
                 if len(pick) > 0:
                     boxes = boxes[pick, :]
             if boxes.shape[0] > 0:
@@ -354,7 +354,7 @@ class TrtPNet(object):
 
         if total_boxes.shape[0] == 0:
             return total_boxes
-        pick = nms(total_boxes, threshold, 'Union')
+        pick = nms(total_boxes, threshold, "Union")
         dets = clip_dets(total_boxes[pick, :], img_w, img_h)
         return dets
 
@@ -371,10 +371,7 @@ class TrtRNet(object):
     """
 
     def __init__(self, engine):
-        self.trtnet = pytrt.PyTrtMtcnn(engine,
-                                       (3, 24, 24),
-                                       (2, 1, 1),
-                                       (4, 1, 1))
+        self.trtnet = pytrt.PyTrtMtcnn(engine, (3, 24, 24), (2, 1, 1), (4, 1, 1))
 
     def detect(self, img, boxes, max_batch=32, threshold=0.7):
         """Detect faces using RNet
@@ -391,7 +388,7 @@ class TrtRNet(object):
             cooresponding scores: [[x1, y1, x2, y2, score], ...]
         """
         if max_batch > 256:
-            raise ValueError('Bad max_batch: %d' % max_batch)
+            raise ValueError("Bad max_batch: %d" % max_batch)
         boxes = boxes[:max_batch]  # assuming boxes are sorted by score
         if boxes.shape[0] == 0:
             return boxes
@@ -408,12 +405,12 @@ class TrtRNet(object):
         self.trtnet.set_batchsize(crops.shape[0])
         out = self.trtnet.forward(crops)
 
-        pp = out['prob1'][:, 1, 0, 0]
-        cc = out['boxes'][:, :, 0, 0]
+        pp = out["prob1"][:, 1, 0, 0]
+        cc = out["boxes"][:, :, 0, 0]
         boxes = generate_rnet_bboxes(pp, cc, boxes, threshold)
         if boxes.shape[0] == 0:
             return boxes
-        pick = nms(boxes, 0.7, 'Union')
+        pick = nms(boxes, 0.7, "Union")
         dets = clip_dets(boxes[pick, :], img_w, img_h)
         return dets
 
@@ -430,11 +427,9 @@ class TrtONet(object):
     """
 
     def __init__(self, engine):
-        self.trtnet = pytrt.PyTrtMtcnn(engine,
-                                       (3, 48, 48),
-                                       (2, 1, 1),
-                                       (4, 1, 1),
-                                       (10, 1, 1))
+        self.trtnet = pytrt.PyTrtMtcnn(
+            engine, (3, 48, 48), (2, 1, 1), (4, 1, 1), (10, 1, 1)
+        )
 
     def detect(self, img, boxes, max_batch=64, threshold=0.7):
         """Detect faces using ONet
@@ -451,10 +446,12 @@ class TrtONet(object):
             landmarks
         """
         if max_batch > 64:
-            raise ValueError('Bad max_batch: %d' % max_batch)
+            raise ValueError("Bad max_batch: %d" % max_batch)
         if boxes.shape[0] == 0:
-            return (np.zeros((0, 5), dtype=np.float32),
-                    np.zeros((0, 10), dtype=np.float32))
+            return (
+                np.zeros((0, 5), dtype=np.float32),
+                np.zeros((0, 10), dtype=np.float32),
+            )
         boxes = boxes[:max_batch]  # assuming boxes are sorted by score
         img_h, img_w, _ = img.shape
         boxes = convert_to_1x1(boxes)
@@ -469,13 +466,12 @@ class TrtONet(object):
         self.trtnet.set_batchsize(crops.shape[0])
         out = self.trtnet.forward(crops)
 
-        pp = out['prob1'][:, 1, 0, 0]
-        cc = out['boxes'][:, :, 0, 0]
-        mm = out['landmarks'][:, :, 0, 0]
+        pp = out["prob1"][:, 1, 0, 0]
+        cc = out["boxes"][:, :, 0, 0]
+        mm = out["landmarks"][:, :, 0, 0]
         boxes, landmarks = generate_onet_outputs(pp, cc, mm, boxes, threshold)
-        pick = nms(boxes, 0.7, 'Min')
-        return (clip_dets(boxes[pick, :], img_w, img_h),
-                np.fix(landmarks[pick, :]))
+        pick = nms(boxes, 0.7, "Min")
+        return (clip_dets(boxes[pick, :], img_w, img_h), np.fix(landmarks[pick, :]))
 
     def destroy(self):
         self.trtnet.destroy()
@@ -517,7 +513,7 @@ class TrtMtcnn(object):
         if img is None:
             raise ValueError
         img_h, img_w, _ = img.shape
-        scale = min(720. / img_h, 1280. / img_w)
+        scale = min(720.0 / img_h, 1280.0 / img_w)
         if scale < 1.0:
             new_h = int(np.ceil(img_h * scale))
             new_w = int(np.ceil(img_w * scale))
