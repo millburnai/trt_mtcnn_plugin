@@ -49,7 +49,7 @@ public:
 
     Logger(Severity severity): reportableSeverity(severity) {}
 
-    void log(Severity severity, const char* msg) override
+    void log(Severity severity, const char* msg) noexcept override
     {
         // suppress messages with severity enum value greater than the reportable
         if (severity > reportableSeverity) return;

@@ -78,7 +78,9 @@ void caffeToTRTModel(const std::string& deployFile,             // name for caff
 {
     // create API root class - must span the lifetime of the engine usage
     IBuilder* builder = createInferBuilder(gLogger);
-    INetworkDefinition* network = builder->createNetwork();
+    IBuilderConfig* config = builder->createBuilderConfig();
+
+    INetworkDefinition* network = builder->createNetworkV2(0);
 
     // parse the caffe model to populate the network, then set the outputs
     ICaffeParser* parser = createCaffeParser();
@@ -100,18 +102,18 @@ void caffeToTRTModel(const std::string& deployFile,             // name for caff
 
     // Build the engine
     builder->setMaxBatchSize(maxBatchSize);
-    builder->setMaxWorkspaceSize(64 << 20);
+    config->setMaxWorkspaceSize(64 << 20);
 
     // set up the network for paired-fp16 format if available
     if (useFp16) {
 #if NV_TENSORRT_MAJOR == 3
         builder->setHalf2Mode(true);
 #else   // NV_TENSORRT_MAJOR >= 4
-        builder->setFp16Mode(true);
+        // config->setFp16Mode(true);
 #endif  // NV_TENSORRT_MAJOR
     }
 
-    ICudaEngine* engine = builder->buildCudaEngine(*network);
+    ICudaEngine* engine = builder->buildEngineWithConfig(*network, *config);
     assert(engine);
 
     // we don't need the network any more, and we can destroy the parser
@@ -142,7 +144,9 @@ void verify_engine(std::string det_name, int num_bindings)
 {
     std::stringstream ss;
     ss << det_name << ".engine";
+    std::cout << std::endl << "herer" << std::endl;
     IHostMemory *trtModelStream{nullptr};
+    std::cout << std::endl << "herer" << std::endl;
     file_to_giestream(ss.str(), trtModelStream);
 
     // create an engine
